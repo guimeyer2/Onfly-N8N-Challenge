@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:14
+    restart: always
+    environment:
+      - POSTGRES_USER=n8n
+      - POSTGRES_PASSWORD=n8n
+      - POSTGRES_DB=n8n
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U n8n"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  n8n:
+    image: n8nio/n8n:latest
+    restart: always
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n
+      - DB_POSTGRESDB_USER=n8n
+      - DB_POSTGRESDB_PASSWORD=n8n
+      - N8N_CUSTOM_EXTENSIONS=/home/node/custom_nodes
+    ports:
+      - "5678:5678"
+    links:
+      - postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # A linha abaixo é a mais importante.
+      # Ela cria uma pasta .n8n-custom no seu computador e a conecta ao n8n.
+      - ./.n8n-custom:/home/node/custom_nodes
+
+volumes:
+  db_data:
