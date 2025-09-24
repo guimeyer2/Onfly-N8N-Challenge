@@ -10,7 +10,7 @@ export class Random implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Random',
 		name: 'random',
-		icon: 'fa:dice', // adicionar ícone
+		icon: 'file:icon.svg',
 		group: ['transform'],
 		version: 1,
 		description: 'Generates a true random number using random.org API',
@@ -68,23 +68,55 @@ export class Random implements INodeType {
 		const returnData: INodeExecutionData[] = [];
 
 		for (let i = 0; i < items.length; i++) {
-			const min = this.getNodeParameter('min', i) as number;
-			const max = this.getNodeParameter('max', i) as number;
+			try {
+				const min = this.getNodeParameter('min', i) as number;
+				const max = this.getNodeParameter('max', i) as number;
 
-			const options: IHttpRequestOptions = {
-				method: 'GET',
-				url: `https://www.random.org/integers/?num=1&min=${min}&max=${max}&col=1&base=10&format=plain&rnd=new`,
-				json: false,
-			};
+				// validação de parâmetros
+				if (min > max) {
+					throw new Error('Minimum value cannot be greater than the maximum value.');
+				}
 
-			const response = await this.helpers.httpRequest(options);
-			const randomNumber = parseInt(response as string, 10);
+				if (min === max) {
+					// o requisito do desafio especifica um intervalo inclusivo, o que torna [X, X] um caso válido que deve retornar X.
+					// por isso, é necessário contornar a API externa neste caso.
+					returnData.push({
+						json: {
+							randomNumber: min,
+						},
+					});
 
-			returnData.push({
-				json: {
-					randomNumber: randomNumber,
-				},
-			});
+					continue;
+				}
+
+				const options: IHttpRequestOptions = {
+					method: 'GET',
+					url: `https://www.random.org/integers/?num=1&min=${min}&max=${max}&col=1&base=10&format=plain&rnd=new`,
+					json: false,
+				};
+
+				const response = await this.helpers.httpRequest(options);
+				const randomNumber = parseInt(response as string, 10);
+
+				if (isNaN(randomNumber)) {
+					throw new Error(`The API returned an invalid response: ${response}`);
+				}
+
+				returnData.push({
+					json: {
+						randomNumber: randomNumber,
+					},
+				});
+			} catch (error) {
+				if (this.continueOnFail()) {
+					returnData.push({
+						json: { error: error.message },
+						pairedItem: { item: i },
+					});
+				} else {
+					throw error;
+				}
+			}
 		}
 		return [returnData];
 	}

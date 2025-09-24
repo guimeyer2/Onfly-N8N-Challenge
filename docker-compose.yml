@@ -37,8 +37,6 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      # A linha abaixo é a mais importante.
-      # Ela cria uma pasta .n8n-custom no seu computador e a conecta ao n8n.
       - ./.n8n-custom:/home/node/custom_nodes
 
 volumes:
