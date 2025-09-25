@@ -72,7 +72,6 @@ export class Random implements INodeType {
 				const min = this.getNodeParameter('min', i) as number;
 				const max = this.getNodeParameter('max', i) as number;
 
-				// validação de parâmetros
 				if (min > max) {
 					throw new Error('Minimum value cannot be greater than the maximum value.');
 				}
